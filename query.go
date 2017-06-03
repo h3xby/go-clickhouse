@@ -8,6 +8,7 @@ import (
 type External struct {
 	Name      string
 	Structure string
+	Format    string
 	Data      []byte
 }
 
@@ -24,6 +25,10 @@ type Query struct {
 
 func (q *Query) AddExternal(name string, structure string, data []byte) {
 	q.externals = append(q.externals, External{Name: name, Structure: structure, Data: data})
+}
+
+func (q *Query) AddExternalFormat(name, structure, format string, data []byte) {
+	q.externals = append(q.externals, External{Name: name, Structure: structure, Data: data, Format: format})
 }
 
 func (q Query) Iter(conn *Conn) *Iter {

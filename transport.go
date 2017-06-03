@@ -63,6 +63,9 @@ func prepareExecPostRequest(host string, q Query) (*http.Request, error) {
 
 		for _, ext := range q.externals {
 			query = query + "&" + ext.Name + "_structure=" + url.QueryEscape(ext.Structure)
+			if ext.Format != "" {
+				query = query + "&" + ext.Name + "_format=" + url.QueryEscape(ext.Format)
+			}
 			part, err := writer.CreateFormFile(ext.Name, ext.Name)
 			if err != nil {
 				return nil, err
