@@ -2,6 +2,7 @@ package clickhouse
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 )
 
@@ -11,6 +12,7 @@ const (
 
 type Conn struct {
 	Host      string
+	Params    url.Values
 	transport Transport
 }
 

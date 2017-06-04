@@ -32,7 +32,7 @@ func (t HttpTransport) Exec(conn *Conn, q Query, readOnly bool) (res string, err
 		resp, err = client.Get(conn.Host + query)
 	} else {
 		var req *http.Request
-		req, err = prepareExecPostRequest(conn.Host, q)
+		req, err = prepareExecPostRequest(conn.Host, conn.Params, q)
 		if err != nil {
 			return "", err
 		}
@@ -49,22 +49,31 @@ func (t HttpTransport) Exec(conn *Conn, q Query, readOnly bool) (res string, err
 	return buf.String(), err
 }
 
-func prepareExecPostRequest(host string, q Query) (*http.Request, error) {
+func prepareExecPostRequest(host string, params url.Values, q Query) (*http.Request, error) {
 	query := prepareHttp(q.Stmt, q.args)
 	var req *http.Request
 	var err error = nil
+	var values *url.Values
+
+	values = &url.Values{}
+	for k, v := range params {
+		for _, i := range v {
+			values.Add(k, i)
+		}
+	}
+
 	if len(q.externals) > 0 {
 		if len(query) > 0 {
-			query = "?query=" + url.QueryEscape(query)
+			values.Add("query", query)
 		}
 
 		body := &bytes.Buffer{}
 		writer := multipart.NewWriter(body)
 
 		for _, ext := range q.externals {
-			query = query + "&" + ext.Name + "_structure=" + url.QueryEscape(ext.Structure)
+			values.Add(ext.Name+"_structure", ext.Structure)
 			if ext.Format != "" {
-				query = query + "&" + ext.Name + "_format=" + url.QueryEscape(ext.Format)
+				values.Add(ext.Name+"_format", ext.Format)
 			}
 			part, err := writer.CreateFormFile(ext.Name, ext.Name)
 			if err != nil {
@@ -81,13 +90,13 @@ func prepareExecPostRequest(host string, q Query) (*http.Request, error) {
 			return nil, err
 		}
 
-		req, err = http.NewRequest("POST", host+query, body)
+		req, err = http.NewRequest("POST", host+"?"+values.Encode(), body)
 		if err != nil {
 			return nil, err
 		}
 		req.Header.Set("Content-Type", writer.FormDataContentType())
 	} else {
-		req, err = http.NewRequest("POST", host, strings.NewReader(query))
+		req, err = http.NewRequest("POST", host+"?"+values.Encode(), strings.NewReader(query))
 		if err != nil {
 			return nil, err
 		}

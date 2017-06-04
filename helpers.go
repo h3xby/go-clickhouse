@@ -3,6 +3,7 @@ package clickhouse
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 )
 
@@ -22,10 +23,21 @@ func NewConn(host string, t Transport) *Conn {
 	if strings.Index(host, "http://") < 0 && strings.Index(host, "https://") < 0 {
 		host = "http://" + host
 	}
-	host = strings.TrimRight(host, "/") + "/"
+	connUrl, err := url.Parse(host)
+	if err != nil {
+		return nil
+	}
+	connUrl.Path = strings.TrimRight(connUrl.Path, "/") + "/"
+	host = fmt.Sprintf("%s://%s%s", connUrl.Scheme, connUrl.Host, connUrl.Path)
+
+	values, err := url.ParseQuery(connUrl.RawQuery)
+	if err != nil {
+		values = url.Values{}
+	}
 
 	return &Conn{
 		Host:      host,
+		Params:    values,
 		transport: t,
 	}
 }
